@@ -50,6 +50,8 @@
 "<="                    return "MENOR_IGUAL";
 "=="                    return "DOBLE_IGUAL";
 "!="                    return "NEGACION_IGUAL";
+"++"                    return "INCREMENTO";
+"--"                    return "DECREMENTO";
 "+"                     return "SUMA";
 "-"                     return "RESTA";
 ";"                     return "PUNTO_COMA";
@@ -114,6 +116,11 @@
     const {Decremento} = require('../arbol/nodoAST.js');
     const {ExpresionRelacional} = require('../arbol/nodoAST.js');
     const {InstruccionIf} = require('../arbol/nodoAST.js');
+    const {IntruccionSwitch} = require('../arbol/nodoAST.js');
+    const {InstruccionCase} = require('../arbol/nodoAST.js');
+    const {BucleWhile} = require('../arbol/nodoAST.js');
+    const {BucleFor} = require('../arbol/nodoAST.js');
+    const {BucleDoWhile} = require('../arbol/nodoAST.js');
 %}
 
 //precedencias
@@ -123,8 +130,9 @@
 %left "DOBLE_IGUAL" "MAYOR" "MENOR" "NEGACION_IGUAL" "MENOR_IGUAL" "MAYOR_IGUAL"
 %left 'SUMA' 'RESTA'
 %left 'MULTIPLICACION' 'DIVISION' "MODULO"
+%nonassoc "POTENCIA"
 %left URESTA
-%right "POTENCIA"
+%left 'DECREMENTO' 'INCREMENTO'
 
 %start programa
 
@@ -159,8 +167,8 @@ declaracion_variable
     | tipo ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion PUNTO_COMA { $$ = new DeclaracionVariables($1, $2, $7, $5); }
     | tipo ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion PUNTO_COMA { $$ = new DeclaracionVariables($1, $2); $$.guardarTernario($4, $6, $8);}
     | tipo COR_ABRE COR_CIERRE ID IGUAL NUEVO tipo COR_ABRE expresion COR_CIERRE PUNTO_COMA { $$ = new Vector($1, $4, $7, $9); }
-    | tipo COR_ABRE COR_CIERRE ID IGUAL LLAVE_ABRE lista_valores LLAVE_CIERRA PUNTO_COMA    { $$ = new Vector($1, $4, null, $7); }
-    | LISTA MENOR tipo MAYOR ID IGUAL NUEVO LISTA MENOR tipo MAYOR PUNTO_COMA               { $$ = new Lista($3, $5, $9); }
+    | tipo COR_ABRE COR_CIERRE ID IGUAL LLAVE_ABRE lista_valores LLAVE_CIERRA PUNTO_COMA    { $$ = new Vector($1, $4, $1, null, $7); }
+    | LISTA MENOR tipo MAYOR ID IGUAL NUEVO LISTA MENOR tipo MAYOR PUNTO_COMA               { $$ = new Lista($3, $5, $9); } //falta
 ;
 
 llamada_funcion 
@@ -172,9 +180,9 @@ asignacion
     : ID IGUAL expresion PUNTO_COMA{ $$ = new Asignacion($1, $3); }
     | ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion PUNTO_COMA{ $$ = new Asignacion($1, $6, $4); }
     | ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion  PUNTO_COMA{ $$ = new Asignacion($1); $$.guardarTernario($3, $5, $7);}
-    | ID COR_ABRE expresion COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new Asignacion($1, $6, null, $3); }
-    | ID PUNTO ADD PAR_ABRE expresion PAR_CIERRA  PUNTO_COMA { $$ = new Asignacion($1, $3, null, null, true); }
-    | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new Asignacion($1, $3, null, $4, true); }
+    | ID COR_ABRE expresion COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new Asignacion($1, $6, null, $3); } //falta
+    | ID PUNTO ADD PAR_ABRE expresion PAR_CIERRA  PUNTO_COMA { $$ = new Asignacion($1, $3, null, null, true); } //falta
+    | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new Asignacion($1, $3, null, $4, true); } //falta
 ;
 
 parametros 
@@ -196,8 +204,8 @@ argumentos
 ;
 
 lista_valores 
-    : lista_valores COMA valor  { $1.push($3); $$ = $1; }
-    | valor { $$ = [$1]; }
+    : lista_valores COMA expresion  { $1.push($3); $$ = $1; }
+    | expresion { $$ = [$1]; }
 ;
 
 valor //utilizar clases
@@ -218,18 +226,18 @@ sentencias
     : declaracion_variable { $$ = $1; }
     | asignacion { $$ = $1; }
     | llamada_funcion PUNTO_COMA { $$ = $1; }
-    | sentencia_condicional_if { $$ = $1; }//falta
-    | sentencia_condicional_switch { $$ = $1; } //falta
-    | sentencia_bucle_while { $$ = $1; }//falta
-    | sentencia_bucle_for { $$ = $1; }//falta
-    | sentencia_bucle_do_while { $$ = $1; }//falta
+    | sentencia_condicional_if { $$ = $1; }
+    | sentencia_condicional_switch { $$ = $1; }
+    | sentencia_bucle_while { $$ = $1; }
+    | sentencia_bucle_for { $$ = $1; }
+    | sentencia_bucle_do_while { $$ = $1; }
     | IMPRIMIR PAR_ABRE expresion PAR_CIERRA PUNTO_COMA { $$ = new Imprimir($3); }
-    | BREAK PUNTO_COMA { $$ = "BREAK"; } //no estoy seguro
-    | CONTINUE PUNTO_COMA { $$ = "CONTINUE"; } // tampoco seguro
+    | BREAK PUNTO_COMA { $$ = "BREAK"; }
+    | CONTINUE PUNTO_COMA { $$ = "CONTINUE"; }
     | RETURN expresion PUNTO_COMA { $$ = new Retorno($2); }
     | RETURN PUNTO_COMA { $$ = new Retorno(); }
-    | ID SUMA SUMA  PUNTO_COMA{ $$ = new Incremento($1); } //falta
-    | ID RESTA RESTA PUNTO_COMA { $$ = new Decremento($1); } //falta	
+    | ID INCREMENTO PUNTO_COMA { $$ = new Incremento($1); }
+    | ID DECREMENTO PUNTO_COMA { $$ = new Decremento($1); }	
 ;
 
 expresion
@@ -241,11 +249,11 @@ expresion
     | PAR_ABRE expresion PAR_CIERRA { $$ = new Expresion("PAR", $2); }
     | valor { $$ = new Expresion("VALOR", $1); }//cambiar al valor de una clase
     | ID { $$ = new Expresion("ID", $1); }
-    | llamada_funcion { $$ = $1; }
+    | llamada_funcion { $$ = new Expresion("LLAMADA", $1); }
     | expresion POTENCIA expresion { $$ = new Expresion("POTENCIA", $1, $3); }
     | expresion MODULO expresion    { $$ = new Expresion("MODULO", $1, $3); }
-    | ID COR_ABRE expresion COR_CIERRE {  } //falta vector
-    | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE {  } //falta lista  
+    | ID COR_ABRE expresion COR_CIERRE { $$ = new Expresion("VECTOR", $1, $3); } //falta vector
+    | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE { $$ = new Expresion("LISTA", $1, $4); } //falta lista  
     | expresion MAYOR expresion { $$ = new ExpresionRelacional("MAYOR", $1, $3); }
     | expresion MENOR expresion	{ $$ = new ExpresionRelacional("MENOR", $1, $3); }
     | expresion MAYOR_IGUAL expresion { $$ = new ExpresionRelacional("MAYOR_IGUAL", $1, $3); }
@@ -255,8 +263,8 @@ expresion
     | expresion AND expresion { $$ = new ExpresionLogica("AND", $1, $3); }
     | expresion OR expresion { $$ = new ExpresionLogica("OR", $1, $3); }
     | NEGACION expresion { $$ = new ExpresionLogica("NEGACION", $2); }
-    /*| ID SUMA SUMA { $$ = new Incremento($1); } //falta
-    | ID RESTA RESTA { $$ = new Decremento($1); } //falta*/
+    | expresion INCREMENTO { $$ = new Expresion("INCREMENTO", $1); }
+    | expresion DECREMENTO { $$ = new Expresion("DECREMENTO", $1); }
 ;
 
 sentencia_condicional_if 
@@ -266,32 +274,48 @@ sentencia_condicional_if
 ;
 
 sentencia_condicional_switch 
-    : SWITCH PAR_ABRE expresion PAR_CIERRA LLAVE_ABRE case_list default_case LLAVE_CIERRA
-    | SWITCH PAR_ABRE expresion PAR_CIERRA LLAVE_ABRE case_list LLAVE_CIERRA
-    | SWITCH PAR_ABRE expresion PAR_CIERRA LLAVE_ABRE default_case LLAVE_CIERRA
+    : SWITCH PAR_ABRE expresion PAR_CIERRA LLAVE_ABRE case_list default_case LLAVE_CIERRA { $$ = new IntruccionSwitch($3, $6, $7); }
+    | SWITCH PAR_ABRE expresion PAR_CIERRA LLAVE_ABRE case_list LLAVE_CIERRA { $$ = new IntruccionSwitch($3, $6); }
+    | SWITCH PAR_ABRE expresion PAR_CIERRA LLAVE_ABRE default_case LLAVE_CIERRA { $$ = new IntruccionSwitch($3, [], $6); }
 ;
 
 case_list 
-    : CASE expresion DOS_PUNTOS declaraciones_locales
+    : case_list case { $1.push($2); $$ = $1; }
+    | case { $$ = [$1]; }
+;
+
+case
+    : CASE expresion DOS_PUNTOS declaraciones_locales { $$ = new InstruccionCase($2, $4); }
 ;
 
 default_case 
-    : DEFAULT DOS_PUNTOS declaraciones_locales BREAK PUNTO_COMA
+    : DEFAULT DOS_PUNTOS declaraciones_locales { $$ = $3; }
 ;
 
 sentencia_bucle_while 
-    : WHILE PAR_ABRE expresion PAR_CIERRA LLAVE_ABRE declaraciones_locales LLAVE_CIERRA
-; //hacer que las sentencias tengan break y continue
-
-sentencia_bucle_for 
-    : FOR PAR_ABRE declaracion_variable_for expresion PUNTO_COMA asignacion PAR_CIERRA LLAVE_ABRE declaraciones_locales LLAVE_CIERRA
-; //hacer que las sentencias tengan break y continue
+    : WHILE PAR_ABRE expresion PAR_CIERRA LLAVE_ABRE declaraciones_locales LLAVE_CIERRA { $$ = new BucleWhile($3, $6); }
+;
 
 sentencia_bucle_do_while 
-    : DO LLAVE_ABRE declaraciones_locales LLAVE_CIERRA WHILE PAR_ABRE expresion PAR_CIERRA PUNTO_COMA
-; //hacer que las sentencias tengan break y continue
+    : DO LLAVE_ABRE declaraciones_locales LLAVE_CIERRA WHILE PAR_ABRE expresion PAR_CIERRA PUNTO_COMA { $$ = new BucleDoWhile($7, $3); }
+;
+
+sentencia_bucle_for 
+    : FOR PAR_ABRE declaracion_variable_for expresion PUNTO_COMA actualizacion PAR_CIERRA LLAVE_ABRE declaraciones_locales LLAVE_CIERRA { $$ = new BucleFor($3, $4, $6, $9); }
+; 
 
 declaracion_variable_for 
-    : declaracion_variable
-    | asignacion
+    : declaracion_variable { $$ = $1; }
+    | asignacion { $$ = $1; }
+;
+
+actualizacion
+    : ID IGUAL expresion { $$ = new Asignacion($1, $3); }
+    | ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion { $$ = new Asignacion($1, $6, $4); }
+    | ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion { $$ = new Asignacion($1); $$.guardarTernario($3, $5, $7);}
+    | ID COR_ABRE expresion COR_CIERRE IGUAL expresion { $$ = new Asignacion($1, $6, null, $3); }
+    | ID PUNTO ADD PAR_ABRE expresion PAR_CIERRA { $$ = new Asignacion($1, $3, null, null, true); }
+    | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE IGUAL expresion { $$ = new Asignacion($1, $3, null, $4, true); }
+    | ID INCREMENTO { $$ = new Incremento($1); }
+    | ID DECREMENTO { $$ = new Decremento($1); }
 ;

@@ -10,7 +10,7 @@ class Ambito{ //arbol n-ario con hijos de ambitos locales y tabla de simbolos co
     agregar(id = "", primitivo = "", tipo = "", objeto = null){
         if (this.buscar(id) != null){
             console.log("El id ya existe " + id);
-            return;
+            return false;
         }
         if(primitivo == "VOID"){
             tipo = "METODO";
@@ -21,6 +21,7 @@ class Ambito{ //arbol n-ario con hijos de ambitos locales y tabla de simbolos co
             tipo: tipo,
             objeto : objeto
         });
+        return true;
     }
 
     buscar(id = ""){
