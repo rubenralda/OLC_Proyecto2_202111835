@@ -35,7 +35,7 @@
 "void"                  return "VOID";
 "return"                return "RETURN";
 "toUpper"               return "TO_UPPER";
-"Length"                return "LENGTH";
+"length"                return "LENGTH";
 "Truncate"              return "TRUNCATE";
 "Round"                 return "ROUND";
 "Typeof"                return "TYPEOF";
@@ -105,12 +105,12 @@
     const {Retorno} = require('../arbol/nodoAST.js');
     const {Parametros} = require('../arbol/nodoAST.js');
     const {Expresion} = require('../arbol/nodoAST.js');
-    const {Llamada} = require('../arbol/nodoAST.js');
+    const {Llamada, Largo} = require('../arbol/nodoAST.js');
     const {Vector} = require('../arbol/nodoAST.js');
     const {Lista} = require('../arbol/nodoAST.js');
     const {Asignacion} = require('../arbol/nodoAST.js');
     const {Imprimir} = require('../arbol/nodoAST.js');
-    const {AccesoValor} = require('../arbol/nodoAST.js');
+    const {ActualizarLista} = require('../arbol/nodoAST.js');
     const {ExpresionLogica} = require('../arbol/nodoAST.js');
     const {Incremento} = require('../arbol/nodoAST.js');
     const {Decremento} = require('../arbol/nodoAST.js');
@@ -150,7 +150,7 @@ instruccion
     : declaracion_funcion { $$ = $1; }
     | declaracion_variable { $$ = $1; }
     | MAIN llamada_funcion PUNTO_COMA { $$ = $2; $2.main = true; }
-    | asignacion PUNTO_COMA{ $$ = $1; }
+    | asignacion { $$ = $1; }
     | error PUNTO_COMA  { console.error('Este es un error sintáctico: ' + yytext + ', en la linea: ' + this._$.first_line + ', en la columna: ' + this._$.first_column);}
 ;
 
@@ -168,21 +168,22 @@ declaracion_variable
     | tipo ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion PUNTO_COMA { $$ = new DeclaracionVariables($1, $2); $$.guardarTernario($4, $6, $8);}
     | tipo COR_ABRE COR_CIERRE ID IGUAL NUEVO tipo COR_ABRE expresion COR_CIERRE PUNTO_COMA { $$ = new Vector($1, $4, $7, $9); }
     | tipo COR_ABRE COR_CIERRE ID IGUAL LLAVE_ABRE lista_valores LLAVE_CIERRA PUNTO_COMA    { $$ = new Vector($1, $4, $1, null, $7); }
-    | LISTA MENOR tipo MAYOR ID IGUAL NUEVO LISTA MENOR tipo MAYOR PUNTO_COMA               { $$ = new Lista($3, $5, $9); } //falta
+    | LISTA MENOR tipo MAYOR ID IGUAL NUEVO LISTA MENOR tipo MAYOR PUNTO_COMA               { $$ = new Lista($3, $5, $10); }
 ;
 
 llamada_funcion 
     : ID PAR_ABRE argumentos PAR_CIERRA { $$ = new Llamada($1, $3); }
     | ID PAR_ABRE PAR_CIERRA { $$ = new Llamada($1); }
+    | LENGTH PAR_ABRE expresion PAR_CIERRA { $$ = new Largo($3); }
 ;
 
 asignacion 
     : ID IGUAL expresion PUNTO_COMA{ $$ = new Asignacion($1, $3); }
     | ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion PUNTO_COMA{ $$ = new Asignacion($1, $6, $4); }
     | ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion  PUNTO_COMA{ $$ = new Asignacion($1); $$.guardarTernario($3, $5, $7);}
-    | ID COR_ABRE expresion COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new Asignacion($1, $6, null, $3); } //falta
-    | ID PUNTO ADD PAR_ABRE expresion PAR_CIERRA  PUNTO_COMA { $$ = new Asignacion($1, $3, null, null, true); } //falta
-    | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new Asignacion($1, $3, null, $4, true); } //falta
+    | ID COR_ABRE expresion COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new Asignacion($1, $6, null, $3); }
+    | ID PUNTO ADD PAR_ABRE expresion PAR_CIERRA PUNTO_COMA { $$ = new ActualizarLista($1, $5); } //falta
+    | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new ActualizarLista($1, $8, $4); } //falta
 ;
 
 parametros 
@@ -252,7 +253,7 @@ expresion
     | llamada_funcion { $$ = new Expresion("LLAMADA", $1); }
     | expresion POTENCIA expresion { $$ = new Expresion("POTENCIA", $1, $3); }
     | expresion MODULO expresion    { $$ = new Expresion("MODULO", $1, $3); }
-    | ID COR_ABRE expresion COR_CIERRE { $$ = new Expresion("VECTOR", $1, $3); } //falta vector
+    | ID COR_ABRE expresion COR_CIERRE { $$ = new Expresion("VECTOR", $1, $3); }
     | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE { $$ = new Expresion("LISTA", $1, $4); } //falta lista  
     | expresion MAYOR expresion { $$ = new ExpresionRelacional("MAYOR", $1, $3); }
     | expresion MENOR expresion	{ $$ = new ExpresionRelacional("MENOR", $1, $3); }
@@ -314,8 +315,8 @@ actualizacion
     | ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion { $$ = new Asignacion($1, $6, $4); }
     | ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion { $$ = new Asignacion($1); $$.guardarTernario($3, $5, $7);}
     | ID COR_ABRE expresion COR_CIERRE IGUAL expresion { $$ = new Asignacion($1, $6, null, $3); }
-    | ID PUNTO ADD PAR_ABRE expresion PAR_CIERRA { $$ = new Asignacion($1, $3, null, null, true); }
-    | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE IGUAL expresion { $$ = new Asignacion($1, $3, null, $4, true); }
+    | ID PUNTO ADD PAR_ABRE expresion PAR_CIERRA { $$ = new ActualizarLista($1, $5); } //falta
+    | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE IGUAL expresion { $$ = new ActualizarLista($1, $8, $4); } //falta
     | ID INCREMENTO { $$ = new Incremento($1); }
     | ID DECREMENTO { $$ = new Decremento($1); }
 ;

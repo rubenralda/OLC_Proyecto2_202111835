@@ -226,7 +226,7 @@ class DeclaracionVariables{
 }
 
 class Asignacion{
-    constructor(id = "", expresion = null, casteo = null, posicion = -1, lista = false){
+    constructor(id = "", expresion = null, casteo = null, posicion = null, lista = false){
         this.id = id
         this.expresion = expresion
         this.casteo = casteo
@@ -283,10 +283,60 @@ class Asignacion{
                 error : true
             }
         }
-        variable.objeto = resultado.resultado
-        return {
-            error : false
+        switch (variable.tipo) {
+            case "VARIABLE":
+                variable.objeto = resultado.resultado
+                return {
+                    error : false
+                }
+            case "VECTOR":
+                let posicion = this.posicion.ejecutar(ambitoLocal)
+                if (posicion.error == true) {
+                    return {
+                        error : true
+                    }
+                }
+                if (typeof(posicion.resultado) != "number") {
+                    console.log("La expresion no es numero de una posicion vector")
+                    return {
+                        error : true
+                    }
+                }
+                if (variable.objeto instanceof Vector) {
+                    const valores = variable.objeto.retonarValor(ambitoLocal);
+                    if (valores.error == true) {
+                        return {
+                            error : true
+                        }
+                    }
+                    if (typeof valores.resultado[posicion.resultado] === 'undefined') {
+                        console.log("Posicion fuera del rango1")
+                        return {
+                            error : true
+                        }
+                    }
+                    valores.resultado[posicion.resultado] = new Expresion("VALOR", resultado.resultado);
+                    variable.objeto = valores.resultado 
+                    return {
+                        error : false
+                    }
+                }
+                if (typeof variable.objeto[posicion.resultado] === 'undefined') {
+                    console.log("Posicion fuera del rango")
+                    return {
+                        error : true
+                    }
+                }
+                variable.objeto[posicion.resultado] = new Expresion("VALOR", resultado.resultado);
+                return {
+                    error : false
+                }
+            default:
+                return {
+                    error : true
+                }
         }
+        
     }
 }
 
@@ -540,7 +590,6 @@ class Expresion{
                             error : true
                         }
                     }
-                    //console.log(vectorEncontrado.objeto[posicion.resultado])
                     valor1 = vectorEncontrado.objeto[posicion.resultado].ejecutar(ambitoLocal);
                     if (valor1.error == true) {
                         return {
@@ -554,6 +603,47 @@ class Expresion{
                 }
                 return {
                     error : true
+                }
+            case "LISTA":
+                let listaEncontrado = ambitoLocal.buscar(this.valor1)
+                let posicionLista = this.valor2.ejecutar(ambitoLocal)
+                if (posicionLista.error == true) {
+                    return {
+                        error : true
+                    }
+                }
+                if (typeof(posicionLista.resultado) != "number") {
+                    console.log("La expresion no es numero de una posicion lista")
+                    return {
+                        error : true
+                    }
+                }
+                if (listaEncontrado == null) {
+                    return {
+                        error : true
+                    }
+                }
+                if (listaEncontrado.tipo != "LISTA") {
+                    console.log("El ID no corresponde a una lista")
+                    return {
+                        error : true
+                    }   
+                }
+                if (typeof listaEncontrado.objeto[posicionLista.resultado] === 'undefined') {
+                    console.log("Posicion fuera del rango lista")
+                    return {
+                        error : true
+                    }
+                }
+                valor1 = listaEncontrado.objeto[posicionLista.resultado].ejecutar(ambitoLocal);
+                if (valor1.error == true) {
+                    return {
+                        error : true
+                    }
+                }
+                return {
+                    error : false,
+                    resultado : valor1.resultado
                 }
             case "LLAMADA":
                 const resultado = this.valor1.ejecutar(ambitoLocal)
@@ -696,6 +786,18 @@ class Lista{
         this.id = id
         this.tipo2 = tipo2
     }
+
+    ejecutar(ambitoLocal){
+        if (this.tipo != this.tipo2) {
+            return {
+                error : true
+            }
+        }
+        ambitoLocal.agregar(this.id, this.tipo, "LISTA" , []);
+        return {
+            error : false
+        }
+    }
 }
 
 class Imprimir{
@@ -812,11 +914,61 @@ class ExpresionRelacional{
     }
 }
 
-class AccesoValor{
-    constructor(id = "", expresion = null, lista = false){
-        this.posicion = expresion
+class ActualizarLista{
+    constructor(id = "", expresion = null, posicion = null){
         this.id = id
-        this.lista = lista
+        this.expresion = expresion
+        this.posicion =  posicion
+    }
+
+    ejecutar(ambitoLocal){
+        let variable = ambitoLocal.buscar(this.id)
+        if(variable == null){
+            console.log("El ID no existe para asignar valor lista")
+            return {
+                error: true
+            }
+        }
+        if (variable.tipo != "LISTA") {
+            console.log("El ID no corresponde a una lista")
+            return {
+                error: true
+            }
+        }
+        let resultado = this.expresion.ejecutar(ambitoLocal)
+        if (resultado.error == true) {
+            return {
+                error : true
+            }
+        }
+        if (this.posicion != null) {
+            let posicion = this.posicion.ejecutar(ambitoLocal)
+            if (posicion.error == true) {
+                return {
+                    error : true
+                }
+            }
+            if (typeof(posicion.resultado) != "number") {
+                console.log("La expresion no es numero de una posicion lista")
+                return {
+                    error : true
+                }
+            }
+            if (typeof variable.objeto[posicion.resultado] === 'undefined') {
+                console.log("Posicion fuera del rango")
+                return {
+                    error : true
+                }
+            }
+            variable.objeto[posicion.resultado] = new Expresion("VALOR", resultado.resultado);
+            return {
+                error : false
+            }
+        }
+        variable.objeto.push(new Expresion("VALOR", resultado.resultado))
+        return {
+            error : false
+        }
     }
 }
 
@@ -1539,6 +1691,42 @@ class BucleDoWhile{
     }
 }
 
+class Largo{
+    constructor(expresion){
+        this.expresion = expresion
+    }
+
+    ejecutar(ambitoLocal){
+        let resultado = this.expresion.ejecutar(ambitoLocal)
+        if (resultado.error == true) {
+            return {
+                error : true
+            }
+        }
+        if (this.expresion.tipo == "ID") {
+            if (Array.isArray(resultado.resultado)) {
+                return {
+                    error: false,
+                    retorno : resultado.resultado.length,
+                    romper : false,
+                    continuar : false
+                }
+            }
+        }
+        if (typeof resultado.resultado === "string") {
+            return {
+                error: false,
+                retorno : resultado.resultado.length,
+                romper : false,
+                continuar : false
+            }
+        }
+        return {
+            error : true
+        }
+    }
+}
+
 module.exports = {
     Retorno, 
     Funcion, 
@@ -1550,7 +1738,7 @@ module.exports = {
     Lista,
     Asignacion,
     Imprimir,
-    AccesoValor,
+    ActualizarLista,
     ExpresionLogica,
     Incremento,
     Decremento,
@@ -1560,5 +1748,6 @@ module.exports = {
     InstruccionCase,
     BucleWhile,
     BucleFor,
-    BucleDoWhile
+    BucleDoWhile,
+    Largo
 };

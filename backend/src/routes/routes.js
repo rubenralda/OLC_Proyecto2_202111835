@@ -25,7 +25,7 @@ router.post("/ejecutar", (req, res) => {
     }else if (sentencia instanceof Vector) {
       ambitoGlobal.agregar(sentencia.id, sentencia.tipo, "VECTOR" , sentencia)
     }else if (sentencia instanceof Lista) {
-        ambitoGlobal.agregar(sentencia.id, sentencia.tipo, "LISTA" , sentencia)
+        ambitoGlobal.agregar(sentencia.id, sentencia.tipo, "LISTA" , [])
     }else if(sentencia instanceof Llamada){
       if(sentencia.main){//si no es main lo ignora
         if (ejecucion == null) {
@@ -37,7 +37,7 @@ router.post("/ejecutar", (req, res) => {
       }
     }
   }
-  let salida = null
+  let salida = ""
   if (ejecucion == null ) {//no encontro el main
     huboError = true
     mensaje += "No hay método Main\n"
