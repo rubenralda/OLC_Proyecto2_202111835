@@ -2423,6 +2423,90 @@ class Largo{
     }
 }
 
+class Tolower{
+    constructor(expresion){
+        this.expresion = expresion
+        this.idDot = uuidv4();
+    }
+
+    ejecutar(ambitoLocal){
+        let resultado = this.expresion.ejecutar(ambitoLocal)
+        if (resultado.error == true) {
+            return {
+                error : true
+            }
+        }
+        if (typeof resultado.resultado === "string") {
+            return {
+                error: false,
+                retorno : resultado.resultado.toLowerCase(),
+                romper : false,
+                continuar : false
+            }
+        }
+        return {
+            error : true
+        }
+    }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="ToLower"]; \n`;
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        
+        return cuerpo
+    }
+}
+
+class Toupper{
+    constructor(expresion){
+        this.expresion = expresion
+        this.idDot = uuidv4();
+    }
+
+    ejecutar(ambitoLocal){
+        let resultado = this.expresion.ejecutar(ambitoLocal)
+        if (resultado.error == true) {
+            return {
+                error : true
+            }
+        }
+        if (typeof resultado.resultado === "string") {
+            return {
+                error: false,
+                retorno : resultado.resultado.toUpperCase(),
+                romper : false,
+                continuar : false
+            }
+        }
+        return {
+            error : true
+        }
+    }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="ToUpper"]; \n`;
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        
+        return cuerpo
+    }
+}
+
 module.exports = {
     Retorno, 
     Funcion, 
@@ -2445,5 +2529,7 @@ module.exports = {
     BucleWhile,
     BucleFor,
     BucleDoWhile,
-    Largo
+    Largo,
+    Tolower,
+    Toupper
 };

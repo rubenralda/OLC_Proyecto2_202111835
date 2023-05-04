@@ -35,6 +35,7 @@
 "void"                  return "VOID";
 "return"                return "RETURN";
 "toUpper"               return "TO_UPPER";
+"toLower"               return "TO_LOWER";
 "length"                return "LENGTH";
 "Truncate"              return "TRUNCATE";
 "Round"                 return "ROUND";
@@ -105,7 +106,7 @@
     const {Retorno} = require('../arbol/nodoAST.js');
     const {Parametros} = require('../arbol/nodoAST.js');
     const {Expresion} = require('../arbol/nodoAST.js');
-    const {Llamada, Largo} = require('../arbol/nodoAST.js');
+    const {Llamada, Largo, Tolower,Toupper} = require('../arbol/nodoAST.js');
     const {Vector} = require('../arbol/nodoAST.js');
     const {Lista} = require('../arbol/nodoAST.js');
     const {Asignacion} = require('../arbol/nodoAST.js');
@@ -175,6 +176,8 @@ llamada_funcion
     : ID PAR_ABRE argumentos PAR_CIERRA { $$ = new Llamada($1, $3); }
     | ID PAR_ABRE PAR_CIERRA { $$ = new Llamada($1); }
     | LENGTH PAR_ABRE expresion PAR_CIERRA { $$ = new Largo($3); }
+    | TO_LOWER PAR_ABRE expresion PAR_CIERRA { $$ = new Tolower($3); }
+    | TO_UPPER PAR_ABRE expresion PAR_CIERRA { $$ = new Toupper($3); }
 ;
 
 asignacion 
