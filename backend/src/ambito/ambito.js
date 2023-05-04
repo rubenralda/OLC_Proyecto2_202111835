@@ -62,6 +62,9 @@ class Ambito{ //arbol n-ario con hijos de ambitos locales y tabla de simbolos co
         }
     }
 
+    mostrarTablaDeSimbolos(){
+        
+    }
 }
 
 module.exports = Ambito;

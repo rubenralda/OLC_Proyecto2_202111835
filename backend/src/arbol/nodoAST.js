@@ -1,11 +1,13 @@
 //const Tabla = require("../tablaSimbolos/tablaSimbolos.js");
 const Ambito = require('../ambito/ambito.js');
+const { v4: uuidv4 } = require('uuid');
 
 class Llamada{
     constructor(id = "", argumentos = [], main = false){
         this.id = id
         this.argumentos = argumentos
         this.main = main
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){//clase ambitoLocal
@@ -28,6 +30,31 @@ class Llamada{
             }
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Llamada"]; \n`;
+        if (this.main) {
+            cuerpo += `"${this.idDot}main"[label="Main"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}main"\n`;
+        }
+        cuerpo += `"${this.idDot}id"[label="${this.id}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}id"\n`;
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+
+        if (this.argumentos.length > 0) {
+            cuerpo += `"${this.idDot}argu"[label="Argumentos"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}argu"\n`;
+            for (const iterator of this.argumentos) {
+                cuerpo += `"${this.idDot}argu" -> ` + iterator.generarDot()
+            }
+        }
+        
+
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        return cuerpo
+    }
 }
 
 class Funcion{
@@ -36,6 +63,7 @@ class Funcion{
         this.id = id
         this.parametros = parametros //lista de objetos Parametro
         this.sentencias = sentencias //lista de objetos variados
+        this.idDot = uuidv4();
     }
 
     /*
@@ -125,6 +153,33 @@ class Funcion{
         }
         
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Funcion"]; \n`;
+        cuerpo += `"${this.idDot}tipo"[label="${this.tipo}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}tipo"\n`;
+        cuerpo += `"${this.idDot}id"[label="${this.id}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}id"\n`;
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+        let i = 0;
+        for (const iterator of this.parametros) {
+            cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
+            cuerpo += `"${this.idDot}coma${i}"[label="\,"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}coma"\n`;
+            i++;
+        }
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        cuerpo += `"${this.idDot}llaveAbre"[label="\{"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveAbre"\n`;
+        for (const iterator of this.sentencias) {
+            cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
+        }
+        cuerpo += `"${this.idDot}llaveCierra"[label="\}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveCierra"\n`;
+        return cuerpo
+    }
 }
 
 class DeclaracionVariables{
@@ -157,6 +212,7 @@ class DeclaracionVariables{
         }
         this.casteo = casteo
         this.ternario = null
+        this.idDot = uuidv4();
     }
 
     guardarTernario(expresionLogica, expresion1, expresion2){
@@ -223,6 +279,23 @@ class DeclaracionVariables{
         this.ternario = null
         this.expresion = expresion
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Declaracion"]; \n`;
+        cuerpo += `"${this.idDot}tipo"[label="${this.tipo}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}tipo"\n`;
+        cuerpo += `"${this.idDot}id"[label="${this.id}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}id"\n`;
+        if (this.expresion == null) {
+            return cuerpo
+        }
+        cuerpo += `"${this.idDot}igual"[label="\="]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}igual"\n`;
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+        return cuerpo
+    }
 }
 
 class Asignacion{
@@ -233,6 +306,7 @@ class Asignacion{
         this.posicion = posicion
         this.lista = lista
         this.ternario = null
+        this.idDot = uuidv4();
     }
 
     guardarTernario(expresionLogica, expresion1, expresion2){
@@ -338,6 +412,18 @@ class Asignacion{
         }
         
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Asignacion"]; \n`;
+        cuerpo += `"${this.idDot}id"[label="${this.id}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}id"\n`;
+        cuerpo += `"${this.idDot}igual"[label="\="]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}igual"\n`;
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+        return cuerpo
+    }
 }
 
 class Ternario{
@@ -362,6 +448,16 @@ class Parametros{
         this.tipo = tipo
         this.id = id
         this.valor = null
+        this.idDot = uuidv4();
+    }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Parametro"]; \n`;
+        cuerpo += `"${this.idDot}tipo"[label="${this.tipo}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}tipo"\n`;
+        cuerpo += `"${this.idDot}id"[label="${this.id}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}id"\n`;
+        return cuerpo
     }
 }
 
@@ -371,6 +467,7 @@ class Expresion{
         this.tipo = tipo
         this.valor1 = valor1
         this.valor2 = valor2
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
@@ -669,11 +766,112 @@ class Expresion{
                 }
         }
     }
+
+    generarDot() {
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Expresion"]; \n`;
+        //console.log(this.valor1)
+        switch (this.tipo) {
+            case "SUMA":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}suma"[label="\+"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}suma"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "RESTA":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}resta"[label="\-"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}resta"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "MULTIPLICACION":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}multi"[label="\*"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}multi"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "DIVICION":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}div"[label="\+"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}div"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "POTENCIA":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}pot"[label="\^"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}pot"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "MODULO":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}mod"[label="\%"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}mod"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "PAR":
+                cuerpo += `"${this.idDot}parAbre"[label="(+"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+                break
+            case "UNARIO":
+                cuerpo += `"${this.idDot}unaro"[label="\-"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}unaro"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                break
+            case "VALOR":
+                cuerpo += `"${this.idDot}valor"[label="${this.valor1}"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}valor"\n`;
+                break
+            case "INCREMENTO":
+                //console.log(this.valor1)
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}incre"[label="\++"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}incre"\n`;
+                break
+            case "DECREMENTO":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}decre"[label="\--"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}decre"\n`;
+                break
+            case "ID":
+                cuerpo += `"${this.idDot}id"[label="${this.valor1}"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}id"\n`;
+                break
+            case "VECTOR":
+                cuerpo += `"${this.idDot}idv"[label="${this.valor1}"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}idv"\n`;
+                cuerpo += `"${this.idDot}corAbre"[label="\["]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}corAbre"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                cuerpo += `"${this.idDot}corCierra"[label="\]"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}corCierra"\n`;
+                break
+            case "LISTA":
+                cuerpo += `"${this.idDot}list"[label="${this.valor1}"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}list"\n`;
+                cuerpo += `"${this.idDot}corAbre"[label="\["]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}corAbre"\n`;
+                cuerpo += `"${this.idDot}corAbre2"[label="\["]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}corAbre2"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                cuerpo += `"${this.idDot}corCierra"[label="\]"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}corCierra"\n`;
+                cuerpo += `"${this.idDot}corCierra2"[label="\]"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}corCierra2"\n`;
+                break
+            case "LLAMADA":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                break
+        }
+        return cuerpo;
+    }
 }
 
 class Retorno{
     constructor(expresion = null){
         this.expresion = expresion
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
@@ -694,6 +892,19 @@ class Retorno{
             retorno : resultado.resultado
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Retorno"]; \n`;
+        cuerpo += `"${this.idDot}return"[label="Return"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}return"\n`;
+        if (this.expresion == null) {
+            return cuerpo
+        }
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+        return cuerpo
+    }
 }
 
 class Vector{
@@ -703,6 +914,7 @@ class Vector{
         this.tipo2 = tipo2
         this.expresion = expresion
         this.listaValores = listaValores
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
@@ -778,6 +990,46 @@ class Vector{
         }
     }
 
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Vector"]; \n`;
+        cuerpo += `"${this.idDot}tipo"[label="${this.tipo}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}tipo"\n`;
+        cuerpo += `"${this.idDot}corAbre"[label="\["]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}corAbre"\n`;
+        cuerpo += `"${this.idDot}corCierra"[label="\]"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}corCierra"\n`;
+        cuerpo += `"${this.idDot}idv"[label="${this.id}"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}idv"\n`;
+        cuerpo += `"${this.idDot}igual"[label="\="]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}igual"\n`;
+        if (this.expresion != null) {
+            cuerpo += `"${this.idDot}nuevo"[label="new"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}nuevo"\n`;
+            cuerpo += `"${this.idDot}tipo2"[label="${this.tipo2}"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}tipo2"\n`;
+            cuerpo += `"${this.idDot}corAbre2"[label="\["]; \n`;
+            cuerpo += `"${this.idDot}" -> "${this.idDot}corAbre2"\n`;
+            cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+            cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+            cuerpo += `"${this.idDot}corCierra2"[label="\]"]; \n`;
+            cuerpo += `"${this.idDot}" -> "${this.idDot}corCierra2"\n`;
+            return cuerpo
+        }
+        cuerpo += `"${this.idDot}llaveAbre"[label="\{"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveAbre"\n`;
+        let i = 0
+        for (const iterator of this.listaValores) {
+            cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
+            cuerpo += `"${this.idDot}coma${i}"[label="\,"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}coma"\n`;
+            i++;
+        }
+        cuerpo += `"${this.idDot}llaveCierra"[label="\}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveCierra"\n`;
+        return cuerpo
+    }
+
 }
 
 class Lista{
@@ -785,6 +1037,7 @@ class Lista{
         this.tipo = tipo
         this.id = id
         this.tipo2 = tipo2
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
@@ -798,11 +1051,39 @@ class Lista{
             error : false
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Lista"]; \n`;
+        cuerpo += `"${this.idDot}lista"[label="List"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}lista"\n`;
+        cuerpo += `"${this.idDot}menor"[label="\<"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}menor"\n`;
+        cuerpo += `"${this.idDot}tipo"[label="${this.tipo}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}tipo"\n`;
+        cuerpo += `"${this.idDot}mayor"[label="\>"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}mayor"\n`;
+        cuerpo += `"${this.idDot}idv"[label="${this.id}"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}idv"\n`;
+        cuerpo += `"${this.idDot}igual"[label="\="]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}igual"\n`;
+        cuerpo += `"${this.idDot}nuevo"[label="new"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}nuevo"\n`;
+        cuerpo += `"${this.idDot}lista2"[label="List"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}lista2"\n`;
+        cuerpo += `"${this.idDot}menor2"[label="\<"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}menor2"\n`;
+        cuerpo += `"${this.idDot}tipo2"[label="${this.tipo2}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}tipo2"\n`;
+        cuerpo += `"${this.idDot}mayor2"[label="\>"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}mayor2"\n`;
+        return cuerpo
+    }
 }
 
 class Imprimir{
     constructor(expresion = null){
         this.expresion = expresion
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
@@ -820,6 +1101,23 @@ class Imprimir{
             error : false
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Imprimir"]; \n`;
+        cuerpo += `"${this.idDot}print"[label="print"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}print"\n`;
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+        
+
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        return cuerpo
+    }
 }
 
 class ExpresionRelacional{
@@ -827,6 +1125,7 @@ class ExpresionRelacional{
         this.tipo = tipo
         this.valor1 = valor1
         this.valor2 = valor2
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
@@ -912,6 +1211,49 @@ class ExpresionRelacional{
                 }
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Expresion"]; \n`;
+        switch (this.tipo) {
+            case "MAYOR":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}mayor"[label="\>"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}mayor"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "MENOR":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}menor"[label="\<"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}menor"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "MAYOR_IGUAL":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}mayorigual"[label="\>="]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}mayorigual"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "MENOR_IGUAL":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}menorigual"[label="\<="]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}menorigual"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "DOBLE_IGUAL":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}dobleigual"[label="="]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}dobleigual"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "NEGACION_IGUAL":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}negacionigual"[label="!="]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}negacionigual"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+        }
+        return cuerpo
+    }
 }
 
 class ActualizarLista{
@@ -919,6 +1261,7 @@ class ActualizarLista{
         this.id = id
         this.expresion = expresion
         this.posicion =  posicion
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
@@ -970,11 +1313,57 @@ class ActualizarLista{
             error : false
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="ActualizarLista"]; \n`;
+        cuerpo += `"${this.idDot}idv"[label="${this.id}"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}idv"\n`;
+        if (this.posicion != null) {
+            cuerpo += `"${this.idDot}corAbre"[label="\["]; \n`;
+            cuerpo += `"${this.idDot}" -> "${this.idDot}corAbre"\n`;
+            cuerpo += `"${this.idDot}corAbre2"[label="\["]; \n`;
+            cuerpo += `"${this.idDot}" -> "${this.idDot}corAbre2"\n`;
+            
+            cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+            cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+
+            cuerpo += `"${this.idDot}corCierra"[label="\]"]; \n`;
+            cuerpo += `"${this.idDot}" -> "${this.idDot}corCierra"\n`;
+            cuerpo += `"${this.idDot}corCierra2"[label="\]"]; \n`;
+            cuerpo += `"${this.idDot}" -> "${this.idDot}corCierra2"\n`;
+
+            cuerpo += `"${this.idDot}igual"[label="\="]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}igual"\n`;
+
+            cuerpo += `"${this.idDot}expre2"[label="Expresion"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre2"\n`;
+            cuerpo += `"${this.idDot}expre2" -> ` + this.expresion.generarDot()
+            return cuerpo
+        }
+        cuerpo += `"${this.idDot}punto"[label="\."]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}punto"\n`;
+        cuerpo += `"${this.idDot}add"[label="add"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}add"\n`;
+
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+        
+
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        return cuerpo
+    }
 }
 
 class Incremento{
     constructor(id = ""){
         this.id = id
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
@@ -1002,11 +1391,21 @@ class Incremento{
             error : true
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Incremento"]; \n`;
+        cuerpo += `"${this.idDot}id"[label="${this.id}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}id"\n`;
+        cuerpo += `"${this.idDot}mas"[label="++"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}mas"\n`;
+        return cuerpo
+    }
 }
 
 class Decremento{
     constructor(id = ""){
         this.id = id
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
@@ -1034,6 +1433,15 @@ class Decremento{
             error : true
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Decremento"]; \n`;
+        cuerpo += `"${this.idDot}id"[label="${this.id}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}id"\n`;
+        cuerpo += `"${this.idDot}menos"[label="--"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}menos"\n`;
+        return cuerpo
+    }
 }
 
 class ExpresionLogica{
@@ -1041,6 +1449,7 @@ class ExpresionLogica{
         this.tipo = tipo
         this.valor1 = valor1
         this.valor2 = valor2
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
@@ -1089,6 +1498,30 @@ class ExpresionLogica{
                 }
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Expresion"]; \n`;
+        switch (this.tipo) {
+            case "AND":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}and"[label="&&"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}and"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "OR":
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                cuerpo += `"${this.idDot}or"[label="||"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}or"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
+                break
+            case "NEGACION":
+                cuerpo += `"${this.idDot}nega"[label="!"]; \n`;
+                cuerpo += `"${this.idDot}" -> "${this.idDot}nega"\n`;
+                cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
+                break
+        }
+        return cuerpo
+    }
 }
 
 class InstruccionIf{
@@ -1097,6 +1530,7 @@ class InstruccionIf{
         this.sentencias = sentencias
         this.sentenciaElse = sentenciaElse
         this.siguiente = siguiente
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoPadre){
@@ -1263,6 +1697,65 @@ class InstruccionIf{
             }
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="InstruccionIf"]; \n`;
+        cuerpo += `"${this.idDot}if"[label="if"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}if"\n`;
+
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+
+        cuerpo += `"${this.idDot}llaveAbre"[label="\{"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveAbre"\n`;
+        for (const iterator of this.sentencias) {
+            if (iterator == "BREAK") {
+                cuerpo += `"${this.idDot}break"[label="break"]; \n`;
+                cuerpo +=  `"${this.idDot}" -> "${this.idDot}break"\n`;
+                continue
+            }
+            if (iterator == "CONTINUE") {
+                cuerpo += `"${this.idDot}conti"[label="continue"]; \n`;
+                cuerpo +=  `"${this.idDot}" -> "${this.idDot}conti"\n`;
+                continue
+            }
+            cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
+        }
+        cuerpo += `"${this.idDot}llaveCierra"[label="\}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveCierra"\n`;
+        if (this.siguiente != null) {
+            cuerpo += `"${this.idDot}else"[label="else"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}else"\n`;
+            cuerpo += `"${this.idDot}else" -> ` + this.siguiente.generarDot()
+        }
+        if (this.sentenciaElse.length > 0) {
+            cuerpo += `"${this.idDot}else2"[label="else"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}else2"\n`;
+            cuerpo += `"${this.idDot}llaveAbre2"[label="\{"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveAbre2"\n`;
+            for (const iterator of this.sentenciaElse) {
+                if (iterator == "BREAK") {
+                    cuerpo += `"${this.idDot}break1"[label="break"]; \n`;
+                    cuerpo +=  `"${this.idDot}" -> "${this.idDot}break1"\n`;
+                    continue
+                }
+                if (iterator == "CONTINUE") {
+                    cuerpo += `"${this.idDot}conti1"[label="continue"]; \n`;
+                    cuerpo +=  `"${this.idDot}" -> "${this.idDot}conti1"\n`;
+                    continue
+                }
+                cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
+            }
+            cuerpo += `"${this.idDot}llaveCierra2"[label="\}"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveCierra2"\n`;
+        }
+        return cuerpo
+    }
 }
 
 class IntruccionSwitch{
@@ -1270,6 +1763,7 @@ class IntruccionSwitch{
         this.expresion = expresion
         this.caseList = caseList
         this.defaultCase = defaultCase
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoPadre){
@@ -1357,12 +1851,53 @@ class IntruccionSwitch{
             continuar : false
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="InstruccionSwitch"]; \n`;
+        cuerpo += `"${this.idDot}switch"[label="switch"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}switch"\n`;
+
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+
+        cuerpo += `"${this.idDot}llaveAbre"[label="\{"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveAbre"\n`;
+        for (const iterator of this.caseList) {
+            cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
+        }
+        if (this.defaultCase.length > 0) {
+            cuerpo += `"${this.idDot}default"[label="Default"]; \n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}default"\n`;
+            for (const iterator of this.defaultCase) {
+                if (iterator == "BREAK") {
+                    cuerpo += `"${this.idDot}break1"[label="break"]; \n`;
+                    cuerpo +=  `"${this.idDot}" -> "${this.idDot}break1"\n`;
+                    continue
+                }
+                if (iterator == "CONTINUE") {
+                    cuerpo += `"${this.idDot}conti1"[label="continue"]; \n`;
+                    cuerpo +=  `"${this.idDot}" -> "${this.idDot}conti1"\n`;
+                    continue
+                }
+                cuerpo += `"${this.idDot}default" -> ` + iterator.generarDot()
+            }
+        }
+        cuerpo += `"${this.idDot}llaveCierra"[label="\}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveCierra"\n`;
+        return cuerpo
+    }
 }
 
 class InstruccionCase{
     constructor(expresion, sentencias = []){
         this.expresion = expresion
         this.sentencias = sentencias
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal, resultado){
@@ -1429,12 +1964,41 @@ class InstruccionCase{
             continuar : false
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="InstruccionCase"]; \n`;
+        cuerpo += `"${this.idDot}case"[label="case"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}case"\n`;
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+
+        cuerpo += `"${this.idDot}dospuntos"[label="\:"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}dospuntos"\n`;
+        
+        for (const iterator of this.sentencias) {
+            if (iterator == "BREAK") {
+                cuerpo += `"${this.idDot}break"[label="break"]; \n`;
+                cuerpo +=  `"${this.idDot}" -> "${this.idDot}break"\n`;
+                continue
+            }
+            if (iterator == "CONTINUE") {
+                cuerpo += `"${this.idDot}conti"[label="continue"]; \n`;
+                cuerpo +=  `"${this.idDot}" -> "${this.idDot}conti"\n`;
+                continue
+            }
+            cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
+        }
+        
+        return cuerpo
+    }
 }
 
 class BucleWhile{
     constructor(expresion, sentencias = []){
         this.expresion = expresion
         this.sentencias = sentencias
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoPadre = new Ambito("Dfdf")){
@@ -1512,6 +2076,39 @@ class BucleWhile{
             continuar : false
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="InstruccionWhile"]; \n`;
+        cuerpo += `"${this.idDot}while"[label="while"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}while"\n`;
+
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+
+        cuerpo += `"${this.idDot}llaveAbre"[label="\{"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveAbre"\n`;
+        for (const iterator of this.sentencias) {
+            if (iterator == "BREAK") {
+                cuerpo += `"${this.idDot}break"[label="break"]; \n`;
+                cuerpo +=  `"${this.idDot}" -> "${this.idDot}break"\n`;
+                continue
+            }
+            if (iterator == "CONTINUE") {
+                cuerpo += `"${this.idDot}conti"[label="continue"]; \n`;
+                cuerpo +=  `"${this.idDot}" -> "${this.idDot}conti"\n`;
+                continue
+            }
+            cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
+        }
+        cuerpo += `"${this.idDot}llaveCierra"[label="\}"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}llaveCierra"\n`;
+        return cuerpo
+    }
 }
 
 class BucleFor{
@@ -1520,6 +2117,7 @@ class BucleFor{
         this.expresion = expresion
         this.actualizacion = actualizacion
         this.sentencias = sentencias
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoPadre = new Ambito("Dfdf")){
@@ -1606,6 +2204,54 @@ class BucleFor{
             continuar : false
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="InstruccionFor"]; \n`;
+        cuerpo += `"${this.idDot}for"[label="for"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}for"\n`;
+
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+
+        cuerpo += `"${this.idDot}declafor"[label="declaracionVariableFor"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}declafor"\n`;
+        cuerpo += `"${this.idDot}declafor" -> ` + this.declaracionFor.generarDot()
+        cuerpo += `"${this.idDot}puto"[label=";"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}puto"\n`;
+
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+
+        cuerpo += `"${this.idDot}puto2"[label=";"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}puto2"\n`;
+
+        cuerpo += `"${this.idDot}actu"[label="Actualizacion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}actu"\n`;
+        cuerpo += `"${this.idDot}actu" -> ` + this.actualizacion.generarDot()
+
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+
+        cuerpo += `"${this.idDot}llaveAbre"[label="\{"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveAbre"\n`;
+        for (const iterator of this.sentencias) {
+            if (iterator == "BREAK") {
+                cuerpo += `"${this.idDot}break"[label="break"]; \n`;
+                cuerpo +=  `"${this.idDot}" -> "${this.idDot}break"\n`;
+                continue
+            }
+            if (iterator == "CONTINUE") {
+                cuerpo += `"${this.idDot}conti"[label="continue"]; \n`;
+                cuerpo +=  `"${this.idDot}" -> "${this.idDot}conti"\n`;
+                continue
+            }
+            cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
+        }
+        cuerpo += `"${this.idDot}llaveCierra"[label="\}"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}llaveCierra"\n`;
+        return cuerpo
+    }
 }
 
 class BucleDoWhile{
@@ -1689,11 +2335,46 @@ class BucleDoWhile{
             continuar : false
         }
     }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="InstruccionDoWhile"]; \n`;
+        cuerpo += `"${this.idDot}do"[label="Do"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}do"\n`;
+
+        cuerpo += `"${this.idDot}llaveAbre"[label="\{"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}llaveAbre"\n`;
+        for (const iterator of this.sentencias) {
+            if (iterator == "BREAK") {
+                cuerpo += `"${this.idDot}break"[label="break"]; \n`;
+                cuerpo +=  `"${this.idDot}" -> "${this.idDot}break"\n`;
+                continue
+            }
+            if (iterator == "CONTINUE") {
+                cuerpo += `"${this.idDot}conti"[label="continue"]; \n`;
+                cuerpo +=  `"${this.idDot}" -> "${this.idDot}conti"\n`;
+                continue
+            }
+            cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
+        }
+        cuerpo += `"${this.idDot}llaveCierra"[label="\}"]; \n`;
+        cuerpo += `"${this.idDot}" -> "${this.idDot}llaveCierra"\n`;
+        cuerpo += `"${this.idDot}while"[label="while"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}while"\n`;
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        return cuerpo
+    }
 }
 
 class Largo{
     constructor(expresion){
         this.expresion = expresion
+        this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
@@ -1724,6 +2405,21 @@ class Largo{
         return {
             error : true
         }
+    }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Length"]; \n`;
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        
+        return cuerpo
     }
 }
 

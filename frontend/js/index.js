@@ -3,6 +3,7 @@ const btnEjecutar = document.getElementById("btn");
 const codigo = document.getElementById("codigo");//textarea
 const lineNumbersConsole = document.querySelector('.line-numbers-consola')
 const consola = document.getElementById("textConsola");//textarea
+const btnArbol = document.getElementById("arbolAst");
 
 document.addEventListener("DOMContentLoaded", (e) => {
     e.preventDefault;
@@ -65,5 +66,26 @@ async function eventbtnEjecutar() {
     consola.value = respuesta.salida
     let dispararEvento = new Event("keyup")
     consola.dispatchEvent(dispararEvento)
+    console.log(respuesta)
+}
+
+btnArbol.addEventListener("click", obtenerArbol);
+async function obtenerArbol() {
+    const ruta = `http://localhost:3000/ast`;
+    let bodyJson = {
+        codigo : codigo.value
+    }
+    const respuesta = await fetch(ruta,{
+        method: 'POST', // or 'PUT'
+        body: JSON.stringify(bodyJson), // data can be `string` or {object}!
+        headers:{
+        'Content-Type': 'application/json'
+        }
+    })
+    .then((res)=> res.json())
+    .then((data) => {
+        return data
+    })
+    //window.open(`https://quickchart.io/graphviz?graph=${codificada}`, "_blank");
     console.log(respuesta)
 }

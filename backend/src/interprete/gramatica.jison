@@ -182,8 +182,8 @@ asignacion
     | ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion PUNTO_COMA{ $$ = new Asignacion($1, $6, $4); }
     | ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion  PUNTO_COMA{ $$ = new Asignacion($1); $$.guardarTernario($3, $5, $7);}
     | ID COR_ABRE expresion COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new Asignacion($1, $6, null, $3); }
-    | ID PUNTO ADD PAR_ABRE expresion PAR_CIERRA PUNTO_COMA { $$ = new ActualizarLista($1, $5); } //falta
-    | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new ActualizarLista($1, $8, $4); } //falta
+    | ID PUNTO ADD PAR_ABRE expresion PAR_CIERRA PUNTO_COMA { $$ = new ActualizarLista($1, $5); }
+    | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new ActualizarLista($1, $8, $4); }
 ;
 
 parametros 

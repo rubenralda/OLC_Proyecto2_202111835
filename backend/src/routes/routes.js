@@ -6,6 +6,10 @@ const Tabla = require("../tablaSimbolos/tablaSimbolos.js")
 const {Funcion} = require('../arbol/nodoAST.js');
 const {DeclaracionVariables} = require('../arbol/nodoAST.js');
 const Ambito = require('../ambito/ambito.js');
+const graphviz = require('graphviz');
+const Viz = require('viz.js');
+const { Module, render } = require('viz.js/full.render.js');
+const fs = require('fs');
 //const path = require("path");
 
 
@@ -16,6 +20,7 @@ router.post("/ejecutar", (req, res) => {
   let ejecucion = null;
   let huboError = false;
   let mensaje = "";
+  
   let ambitoGlobal = new Ambito("global", null); //null porque es la raiz
   for (const sentencia of raiz) {
     if (sentencia instanceof DeclaracionVariables) {//agrega las variables a tabla de simbolos
@@ -37,25 +42,42 @@ router.post("/ejecutar", (req, res) => {
       }
     }
   }
-  let salida = ""
+  
   if (ejecucion == null ) {//no encontro el main
     huboError = true
     mensaje += "No hay método Main\n"
   }else if(huboError == true){
     mensaje += "Error hay dos métodos o funciones declaradas Main\n"
-  }else {
-    //si no ocurrio ningún error hacer la ejecucion
+  }else {//si no ocurrio ningún error hacer la ejecucion
     const resultado = ejecucion.ejecutar(ambitoGlobal, ambitoGlobal)
     if (resultado.error == true) {
-      console.log("ejecucion terminada con error")
+      console.log("Ejecucion terminada con error")
     }
-    //mensaje += "Error: el método o función no existe"
   }
-  //console.log(ambitoGlobal.tabla)
   let respuesta = {
-    arbol: "", //para mostrar el arbol con graphviz
     ast: raiz, //el resultado del parser
     salida : ambitoGlobal.salida
+  };
+  res.send(respuesta);
+});
+
+router.post("/ast", (req, res) => {
+  let codigo = req.body.codigo;
+  let parser = new gramatica.Parser();
+  let raiz = parser.parse(codigo);
+  let cuerpo = `digraph{
+    fontname="Helvetica,Arial,sans-serif"
+    node [fontname="Helvetica,Arial,sans-serif", shape=box]
+    edge [fontname="Helvetica,Arial,sans-serif"]\n`;
+  cuerpo += `"raiz"[label="Sentencias"]; \n`;
+  for (const sentencia of raiz) {
+    cuerpo += `"raiz" -> ` + sentencia.generarDot();
+  }
+  cuerpo += "}";
+  //const dot = fs.readFileSync('ejemplo.dot', 'utf8');
+  let respuesta = {
+    arbol: cuerpo,
+    //imagen: cuerpo //para mostrar el arbol con graphviz
   };
   res.send(respuesta);
 });
