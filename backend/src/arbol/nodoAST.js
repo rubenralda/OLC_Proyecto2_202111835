@@ -166,7 +166,7 @@ class Funcion{
         for (const iterator of this.parametros) {
             cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
             cuerpo += `"${this.idDot}coma${i}"[label="\,"]; \n`;
-            cuerpo +=  `"${this.idDot}" -> "${this.idDot}coma"\n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}coma${i}"\n`;
             i++;
         }
         cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
@@ -1022,7 +1022,7 @@ class Vector{
         for (const iterator of this.listaValores) {
             cuerpo += `"${this.idDot}" -> ` + iterator.generarDot()
             cuerpo += `"${this.idDot}coma${i}"[label="\,"]; \n`;
-            cuerpo +=  `"${this.idDot}" -> "${this.idDot}coma"\n`;
+            cuerpo +=  `"${this.idDot}" -> "${this.idDot}coma${i}"\n`;
             i++;
         }
         cuerpo += `"${this.idDot}llaveCierra"[label="\}"]; \n`;

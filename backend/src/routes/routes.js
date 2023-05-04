@@ -56,7 +56,8 @@ router.post("/ejecutar", (req, res) => {
   }
   let respuesta = {
     ast: raiz, //el resultado del parser
-    salida : ambitoGlobal.salida
+    salida : ambitoGlobal.salida,
+    tablaSimbolos : ambitoGlobal.tabla
   };
   res.send(respuesta);
 });
