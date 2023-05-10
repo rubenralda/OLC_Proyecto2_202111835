@@ -1,3 +1,31 @@
+//mi codigo
+%{
+    const {Funcion} = require('../arbol/nodoAST.js');
+    const {DeclaracionVariables} = require('../arbol/nodoAST.js');
+    const {Retorno} = require('../arbol/nodoAST.js');
+    const {Parametros} = require('../arbol/nodoAST.js');
+    const {Expresion, Ternario, Casteo} = require('../arbol/nodoAST.js');
+    const {Llamada, Largo, Tolower,Toupper,Truncate,Round,TipoDeDato} = require('../arbol/nodoAST.js');
+    const {Vector, HacerString} = require('../arbol/nodoAST.js');
+    const {Lista} = require('../arbol/nodoAST.js');
+    const {Asignacion} = require('../arbol/nodoAST.js');
+    const {Imprimir} = require('../arbol/nodoAST.js');
+    const {ActualizarLista} = require('../arbol/nodoAST.js');
+    const {ExpresionLogica} = require('../arbol/nodoAST.js');
+    const {Incremento} = require('../arbol/nodoAST.js');
+    const {Decremento} = require('../arbol/nodoAST.js');
+    const {ExpresionRelacional} = require('../arbol/nodoAST.js');
+    const {InstruccionIf} = require('../arbol/nodoAST.js');
+    const {IntruccionSwitch} = require('../arbol/nodoAST.js');
+    const {InstruccionCase} = require('../arbol/nodoAST.js');
+    const {BucleWhile} = require('../arbol/nodoAST.js');
+    const {BucleFor} = require('../arbol/nodoAST.js');
+    const {BucleDoWhile} = require('../arbol/nodoAST.js');
+    const {Errores} = require('../arbol/errores.js');
+
+    let errores = [];
+%}
+
 %lex
 %options case-insensitive
 %x string
@@ -79,7 +107,7 @@
 
 
 //expresion regulares grandes
-([a-zA-Z])[a-zA-Z0-9_]* return "ID";
+([a-zA-Z])[a-zA-Z0-9_]* { yytext = yytext.toLowerCase(); return "ID"; }
 [0-9]+"."[0-9]+\b       return "DECIMAL";
 [0-9]+\b                return "ENTERO";
 \'((\\\')|[^\n\'])*\'	{yytext = yytext.substr(1,yyleng-2); return 'CARACTER'; }
@@ -91,40 +119,17 @@
 <string>"\\\\"          {cadena += "\\";}
 <string>"\\'"           {cadena += "\'";}
 <string>["]             {yytext = cadena; this.popState(); return 'CADENA';}
-<string>[\r\n]          {console.log("Caracter no reconocido: ", yylloc.first_line, yylloc.first_column, "-", yylloc.last_column, "Error lexico", yytext);}
+<string>[\r\n]          {errores.push(new Errores("Lexico", "Caracter no reconocido en el lenguaje:  " + yytext, yylloc.first_line, yylloc.first_column + "-" + yylloc.last_column));}
 
 <<EOF>>				    return 'EOF';
 
 // errores
-.                       {console.log("Caracter no reconocido: ", yylloc.first_line, yylloc.first_column, "-", yylloc.last_column, "Error lexico", yytext);}
+.                       {errores.push(new Errores("Lexico", "Caracter no reconocido en el lenguaje:  " + yytext, yylloc.first_line, yylloc.first_column + "-" + yylloc.last_column));}
 
 /lex
-//mi codigo
-%{
-    const {Funcion} = require('../arbol/nodoAST.js');
-    const {DeclaracionVariables} = require('../arbol/nodoAST.js');
-    const {Retorno} = require('../arbol/nodoAST.js');
-    const {Parametros} = require('../arbol/nodoAST.js');
-    const {Expresion} = require('../arbol/nodoAST.js');
-    const {Llamada, Largo, Tolower,Toupper} = require('../arbol/nodoAST.js');
-    const {Vector} = require('../arbol/nodoAST.js');
-    const {Lista} = require('../arbol/nodoAST.js');
-    const {Asignacion} = require('../arbol/nodoAST.js');
-    const {Imprimir} = require('../arbol/nodoAST.js');
-    const {ActualizarLista} = require('../arbol/nodoAST.js');
-    const {ExpresionLogica} = require('../arbol/nodoAST.js');
-    const {Incremento} = require('../arbol/nodoAST.js');
-    const {Decremento} = require('../arbol/nodoAST.js');
-    const {ExpresionRelacional} = require('../arbol/nodoAST.js');
-    const {InstruccionIf} = require('../arbol/nodoAST.js');
-    const {IntruccionSwitch} = require('../arbol/nodoAST.js');
-    const {InstruccionCase} = require('../arbol/nodoAST.js');
-    const {BucleWhile} = require('../arbol/nodoAST.js');
-    const {BucleFor} = require('../arbol/nodoAST.js');
-    const {BucleDoWhile} = require('../arbol/nodoAST.js');
-%}
 
 //precedencias
+%left "TERNARIO"
 %left "OR"
 %left "AND"
 %right "NEGACION"
@@ -134,12 +139,17 @@
 %nonassoc "POTENCIA"
 %left URESTA
 %left 'DECREMENTO' 'INCREMENTO'
+%left 'PAR_ABRE'
 
 %start programa
 
 %% //gramatica
 programa 
     : instrucciones EOF { return $1; }
+    | error {
+                errores.push(new Errores("Sintactico", "Error sintactico " + yytext, this._$.first_line, this._$.first_column));
+                return errores;
+            }
 ;
 
 instrucciones 
@@ -152,7 +162,6 @@ instruccion
     | declaracion_variable { $$ = $1; }
     | MAIN llamada_funcion PUNTO_COMA { $$ = $2; $2.main = true; }
     | asignacion { $$ = $1; }
-    | error PUNTO_COMA  { console.error('Este es un error sintáctico: ' + yytext + ', en la linea: ' + this._$.first_line + ', en la columna: ' + this._$.first_column);}
 ;
 
 declaracion_funcion 
@@ -165,11 +174,12 @@ declaracion_funcion
 declaracion_variable 
     : tipo ID PUNTO_COMA { $$ = new DeclaracionVariables($1, $2); }
     | tipo ID IGUAL expresion PUNTO_COMA { $$ = new DeclaracionVariables($1, $2, $4); }
-    | tipo ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion PUNTO_COMA { $$ = new DeclaracionVariables($1, $2, $7, $5); }
-    | tipo ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion PUNTO_COMA { $$ = new DeclaracionVariables($1, $2); $$.guardarTernario($4, $6, $8);}
+    //| tipo ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion PUNTO_COMA { $$ = new DeclaracionVariables($1, $2, $7, $5); }
+    //| tipo ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion PUNTO_COMA { $$ = new DeclaracionVariables($1, $2); $$.guardarTernario($4, $6, $8);}
     | tipo COR_ABRE COR_CIERRE ID IGUAL NUEVO tipo COR_ABRE expresion COR_CIERRE PUNTO_COMA { $$ = new Vector($1, $4, $7, $9); }
     | tipo COR_ABRE COR_CIERRE ID IGUAL LLAVE_ABRE lista_valores LLAVE_CIERRA PUNTO_COMA    { $$ = new Vector($1, $4, $1, null, $7); }
     | LISTA MENOR tipo MAYOR ID IGUAL NUEVO LISTA MENOR tipo MAYOR PUNTO_COMA               { $$ = new Lista($3, $5, $10); }
+    | LISTA MENOR tipo MAYOR ID IGUAL TO_CHAR_ARRAY PAR_ABRE expresion PAR_CIERRA PUNTO_COMA { $$ = new Lista($3, $5, "", $9); }
 ;
 
 llamada_funcion 
@@ -178,12 +188,16 @@ llamada_funcion
     | LENGTH PAR_ABRE expresion PAR_CIERRA { $$ = new Largo($3); }
     | TO_LOWER PAR_ABRE expresion PAR_CIERRA { $$ = new Tolower($3); }
     | TO_UPPER PAR_ABRE expresion PAR_CIERRA { $$ = new Toupper($3); }
+    | TRUNCATE PAR_ABRE expresion PAR_CIERRA { $$ = new Truncate($3); }
+    | ROUND PAR_ABRE expresion PAR_CIERRA { $$ = new Round($3); }
+    | TYPEOF PAR_ABRE expresion PAR_CIERRA { $$ = new TipoDeDato($3); }
+    | TO_STRING PAR_ABRE expresion PAR_CIERRA { $$ = new HacerString($3); }
 ;
 
 asignacion 
     : ID IGUAL expresion PUNTO_COMA{ $$ = new Asignacion($1, $3); }
-    | ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion PUNTO_COMA{ $$ = new Asignacion($1, $6, $4); }
-    | ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion  PUNTO_COMA{ $$ = new Asignacion($1); $$.guardarTernario($3, $5, $7);}
+    //| ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion PUNTO_COMA{ $$ = new Asignacion($1, $6, $4); }
+    //| ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion  PUNTO_COMA{ $$ = new Asignacion($1); $$.guardarTernario($3, $5, $7);}
     | ID COR_ABRE expresion COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new Asignacion($1, $6, null, $3); }
     | ID PUNTO ADD PAR_ABRE expresion PAR_CIERRA PUNTO_COMA { $$ = new ActualizarLista($1, $5); }
     | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE IGUAL expresion PUNTO_COMA { $$ = new ActualizarLista($1, $8, $4); }
@@ -269,6 +283,8 @@ expresion
     | NEGACION expresion { $$ = new ExpresionLogica("NEGACION", $2); }
     | expresion INCREMENTO { $$ = new Expresion("INCREMENTO", $1); }
     | expresion DECREMENTO { $$ = new Expresion("DECREMENTO", $1); }
+    | expresion TERNARIO expresion DOS_PUNTOS expresion { $$ = new Ternario($1, $3, $5); }
+    | PAR_ABRE tipo PAR_CIERRA expresion { $$ = new Casteo($2, $4); }
 ;
 
 sentencia_condicional_if 
@@ -315,8 +331,8 @@ declaracion_variable_for
 
 actualizacion
     : ID IGUAL expresion { $$ = new Asignacion($1, $3); }
-    | ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion { $$ = new Asignacion($1, $6, $4); }
-    | ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion { $$ = new Asignacion($1); $$.guardarTernario($3, $5, $7);}
+    //| ID IGUAL PAR_ABRE tipo PAR_CIERRA expresion { $$ = new Asignacion($1, $6, $4); }
+    //| ID IGUAL expresion TERNARIO expresion DOS_PUNTOS expresion { $$ = new Asignacion($1); $$.guardarTernario($3, $5, $7);}
     | ID COR_ABRE expresion COR_CIERRE IGUAL expresion { $$ = new Asignacion($1, $6, null, $3); }
     | ID PUNTO ADD PAR_ABRE expresion PAR_CIERRA { $$ = new ActualizarLista($1, $5); } //falta
     | ID COR_ABRE COR_ABRE expresion COR_CIERRE COR_CIERRE IGUAL expresion { $$ = new ActualizarLista($1, $8, $4); } //falta

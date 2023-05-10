@@ -235,15 +235,21 @@ class DeclaracionVariables{
     retonarValor(ambitoLocal){
         if (this.casteo != null) {
             if(this.casteo == this.tipo){
-                switch (this.casteo) {//verificar que el ejecutar no retorna error : true
+                let resultadoCasteo = this.expresion.ejecutar(ambitoLocal)
+                if (resultadoCasteo.error == true) {
+                    return {
+                        error : true
+                    }
+                }
+                switch (this.casteo) {
                     case "INT":
-                        this.expresion = new Expresion("VALOR", parseInt(this.expresion.ejecutar(ambitoLocal)))
+                        this.expresion = new Expresion("VALOR", parseInt(resultadoCasteo.resultado))
                         break;
                     case "DOUBLE":
-                        this.expresion = new Expresion("VALOR", parseFloat(this.expresion.ejecutar(ambitoLocal)))
+                        this.expresion = new Expresion("VALOR", parseFloat(resultadoCasteo.resultado))
                         break;
                     case "CHAR":
-                        this.expresion = new Expresion("VALOR", String.fromCharCode(parseInt(this.expresion.ejecutar(ambitoLocal))))
+                        this.expresion = new Expresion("VALOR", String.fromCharCode(parseInt(resultadoCasteo.resultado)))
                         break;
                     default:
                         console.log("Casteo no valido")
@@ -251,16 +257,23 @@ class DeclaracionVariables{
                             error: true
                         }
                 }
-                this.casteo == null
+                this.casteo = null
             }else{
                 console.log("Casteo no posible")
                 return {
                     error: true
                 }
             }
-        }else if(this.ternario != null){
+        }
+        if(this.ternario != null){
+            let resulTernario = this.ternario.ejecutar(ambitoLocal)
+            if (resulTernario.error == true) {
+                return {
+                    error : true
+                }
+            }
+            this.expresion = resulTernario.resultado
             this.ternario = null
-            this.expresion = this.ternario.ejecutar(ambitoLocal)//falta tambien
         }
         let resultado = this.expresion.ejecutar(ambitoLocal)
         if (resultado.error == true) {
@@ -316,22 +329,28 @@ class Asignacion{
     ejecutar(ambitoLocal){
         let variable = ambitoLocal.buscar(this.id)
         if(variable == null){
-            console.log("El ID no existe para asignar valor")
+            console.log("El ID no existe para asignar valor "+ this.id)
             return {
                 error: true
             }
-        }
+        } 
         if (this.casteo != null) {
-            if(this.casteo == variable.tipo){//verificar que el ejecutar no retorna error : true
+            if(this.casteo == variable.tipo){
+                let resultadoCasteo = this.expresion.ejecutar(ambitoLocal)
+                if (resultadoCasteo.error == true) {
+                    return {
+                        error : true
+                    }
+                }
                 switch (this.casteo) {
                     case "INT":
-                        this.expresion = new Expresion("VALOR", parseInt(this.expresion.ejecutar(ambitoLocal)))
+                        this.expresion = new Expresion("VALOR", parseInt(resultadoCasteo.resultado))
                         break;
                     case "DOUBLE":
-                        this.expresion = new Expresion("VALOR", parseFloat(this.expresion.ejecutar(ambitoLocal)))
+                        this.expresion = new Expresion("VALOR", parseFloat(resultadoCasteo.resultado))
                         break;
                     case "CHAR":
-                        this.expresion = new Expresion("VALOR", String.fromCharCode(parseInt(this.expresion.ejecutar(ambitoLocal))))
+                        this.expresion = new Expresion("VALOR", String.fromCharCode(parseInt(resultadoCasteo.resultado)))
                         break;
                     default:
                         console.log("Casteo no valido")
@@ -348,8 +367,14 @@ class Asignacion{
             }
         }
         if(this.ternario != null){
+            let resulTernario = this.ternario.ejecutar(ambitoLocal)
+            if (resulTernario.error == true) {
+                return {
+                    error : true
+                }
+            }
+            this.expresion = resulTernario.resultado
             this.ternario = null
-            this.expresion = this.ternario.ejecutar(ambitoLocal)//falta ternario
         }
         let resultado = this.expresion.ejecutar(ambitoLocal)
         if (resultado.error == true) {
@@ -431,15 +456,125 @@ class Ternario{
         this.expresionLogica = expresionLogica
         this.expresion1 = expresion1
         this.expresion2 = expresion2
+        this.idDot = uuidv4();
     }
     
     ejecutar(ambitoLocal){
         let resultado = this.expresionLogica.ejecutar(ambitoLocal);
-        if (resultado == true || resultado == false) {
-            return resultado ? this.expresion1 : this.expresion2 ;
+        if (resultado.error == true) {
+            return {
+                error : true
+            }
+        }
+        if (resultado.resultado == true) {
+            let valor1 = this.expresion1.ejecutar(ambitoLocal)
+            if (valor1.error == true) {
+                return {
+                    error : true
+                }
+            }
+            return {
+                error : false,
+                resultado : valor1.resultado
+            }
+        } else if(resultado.resultado == false){
+            let valor2 = this.expresion2.ejecutar(ambitoLocal)
+            if (valor2.error == true) {
+                return {
+                    error : true
+                }
+            }
+            return {
+                error : false,
+                resultado : valor2.resultado
+            }
         }
         console.log("Expresion logica no valida, se retorna la expresion verdadera")
-        return this.expresion1;        
+        let valor1 = this.expresion1.ejecutar(ambitoLocal)
+        if (valor1.error == true) {
+            return {
+                error : true
+            }
+        }
+        return {
+            error : false,
+            resultado : valor1.resultado
+        }
+    }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Ternario"]; \n`;
+        cuerpo += `"${this.idDot}expre1"[label="Expresion Logica"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre1"\n`;
+        cuerpo += `"${this.idDot}expre1" -> ` + this.expresionLogica.generarDot()
+        cuerpo += `"${this.idDot}terne"[label="?"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}terne"\n`;
+        cuerpo += `"${this.idDot}expre2"[label="Expresion Verdadera"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre2"\n`;
+        cuerpo += `"${this.idDot}expre2" -> ` + this.expresion1.generarDot()
+        cuerpo += `"${this.idDot}putos"[label=":"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}putos"\n`;
+        
+        cuerpo += `"${this.idDot}expre"[label="Expresion Falsa"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion2.generarDot()
+        return cuerpo
+    }
+}
+
+class Casteo{
+    constructor(tipo = "", expresion){
+        this.tipo = tipo
+        this.expresion = expresion
+    }
+
+    ejecutar(ambitoLocal){
+        let resultadoCasteo = this.expresion.ejecutar(ambitoLocal)
+        if (resultadoCasteo.error == true) {
+            return {
+                error : true
+            }
+        }
+        let resultado = 0
+        switch (this.tipo) {
+            case "INT":
+                resultado = parseInt(resultadoCasteo.resultado)
+                break;
+            case "DOUBLE":
+                resultado = parseFloat(resultadoCasteo.resultado)
+                break;
+            case "CHAR":
+                resultado = String.fromCharCode(resultadoCasteo.resultado[0])
+                break;
+            case "STRING":
+                resultado = resultadoCasteo.resultado + ""
+                break;
+            default:
+                console.log("Casteo no valido")
+                return {
+                    error: true
+                }
+        }
+        return {
+            error : false,
+            resultado : resultado
+        }
+    }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Casteo"]; \n`;
+        cuerpo += `"${this.idDot}parabre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parabre"\n`;
+
+        cuerpo += `"${this.idDot}tipo"[label="${this.tipo}"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}tipo"\n`;
+        
+        cuerpo += `"${this.idDot}parcierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parcierra"\n`;
+        cuerpo += `"${this.idDot}expre2"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre2"\n`;
+        cuerpo += `"${this.idDot}expre2" -> ` + this.expresion.generarDot()
+        return cuerpo
     }
 }
 
@@ -633,6 +768,7 @@ class Expresion{
                         id : valorEncontrado
                     }
                 }
+                console.log("El ID no existe: " + this.valor1)
                 return {
                     error : true
                 }
@@ -732,6 +868,7 @@ class Expresion{
                         error : true
                     }
                 }
+                //console.log(listaEncontrado.objeto)
                 valor1 = listaEncontrado.objeto[posicionLista.resultado].ejecutar(ambitoLocal);
                 if (valor1.error == true) {
                     return {
@@ -791,7 +928,7 @@ class Expresion{
                 break
             case "DIVICION":
                 cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
-                cuerpo += `"${this.idDot}div"[label="\+"]; \n`;
+                cuerpo += `"${this.idDot}div"[label="\/"]; \n`;
                 cuerpo += `"${this.idDot}" -> "${this.idDot}div"\n`;
                 cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
                 break
@@ -808,7 +945,7 @@ class Expresion{
                 cuerpo += `"${this.idDot}" -> ` + this.valor2.generarDot()
                 break
             case "PAR":
-                cuerpo += `"${this.idDot}parAbre"[label="(+"]; \n`;
+                cuerpo += `"${this.idDot}parAbre"[label="("]; \n`;
                 cuerpo += `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
                 cuerpo += `"${this.idDot}" -> ` + this.valor1.generarDot()
                 cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
@@ -1033,14 +1170,39 @@ class Vector{
 }
 
 class Lista{
-    constructor(tipo = "", id = "", tipo2 = ""){
+    constructor(tipo = "", id = "", tipo2 = "", expresion = null){
         this.tipo = tipo
         this.id = id
         this.tipo2 = tipo2
+        this.expresion = expresion
         this.idDot = uuidv4();
     }
 
     ejecutar(ambitoLocal){
+        if (this.expresion != null) {
+            let resultado =  this.expresion.ejecutar(ambitoLocal)
+            if (resultado.error == true) {
+                return {
+                    error : true
+                }
+            }
+            if (typeof resultado.resultado === "string") {
+                let valor = resultado.resultado.split("")
+                let aux = []
+                for (const letra of valor) {
+                    aux.push(new Expresion("VALOR", letra))
+                }
+                ambitoLocal.agregar(this.id, this.tipo, "LISTA" , aux);
+                return {
+                    error : false
+                }
+            }
+            console.log("TocharArray solo admite cadenas")
+            return {
+                error : true
+            }
+        }
+
         if (this.tipo != this.tipo2) {
             return {
                 error : true
@@ -1676,6 +1838,20 @@ class InstruccionIf{
                         error : true
                     }
                 }
+                if (resulEjecucion.romper == true) {
+                    return {
+                        error: false,
+                        romper : true,
+                        continuar : false
+                    }
+                }
+                if (resulEjecucion.continuar == true) {
+                    return {
+                        error: false,
+                        romper : false,
+                        continuar : true
+                    }
+                }
                 if ("retorno" in resulEjecucion && !(sentencia instanceof Llamada)) {
                     return {
                         error: false,
@@ -1779,6 +1955,11 @@ class IntruccionSwitch{
         //let continuar = false
         for (const caso of this.caseList) {
             const resultCase = caso.ejecutar(ambitoLocal, resultado.resultado)
+            if (resultCase.error == true) {
+                return {
+                    error : true
+                }
+            }
             if ("retorno" in resultCase) {
                 return {
                     error: false,
@@ -2003,6 +2184,7 @@ class BucleWhile{
 
     ejecutar(ambitoPadre = new Ambito("Dfdf")){
         let ambitoLocal = new Ambito("WHILE", ambitoPadre); //ambito del while
+        ambitoLocal.idDot = this.idDot
         ambitoPadre.agregarHijo(ambitoLocal)
         let resultado = this.expresion.ejecutar(ambitoLocal)
         if (resultado.error == true) {
@@ -2062,6 +2244,7 @@ class BucleWhile{
                 }
             }
             ambitoLocal = new Ambito("WHILE", ambitoPadre); //ambito del while
+            ambitoLocal.idDot = this.idDot
             ambitoPadre.agregarHijo(ambitoLocal)
             resultado = this.expresion.ejecutar(ambitoLocal)
             if (resultado.error == true) {
@@ -2126,11 +2309,13 @@ class BucleFor{
         let declaracion = this.declaracionFor.ejecutar(ambitoLocal)
         let resultado = this.expresion.ejecutar(ambitoLocal)
         if (resultado.error == true || declaracion.error == true) {
+            //console.log("Error de for " + this.expresion.valor1)
             return {
                 error: true
             }
         }
         let ambitoAuxiliar = new Ambito("FORDentro", ambitoLocal); //ambito del for
+        ambitoAuxiliar.idDot = this.idDot
         ambitoLocal.agregarHijo(ambitoAuxiliar)
         while (resultado.resultado == true) {
             for (const sentencia of this.sentencias) {//ejecuto cada sentencia del for
@@ -2160,6 +2345,7 @@ class BucleFor{
                 }
                 const resulEjecucion = sentencia.ejecutar(ambitoAuxiliar);
                 if (resulEjecucion.error == true) {
+                    //console.log("Error de for" + this.idDot)
                     return {
                         error : true
                     }
@@ -2184,6 +2370,7 @@ class BucleFor{
                 }
             }
             ambitoAuxiliar = new Ambito("FORDentro", ambitoLocal); //ambito del for
+            ambitoAuxiliar.idDot = this.idDot
             ambitoLocal.agregarHijo(ambitoAuxiliar)
             let actu = this.actualizacion.ejecutar(ambitoAuxiliar)
             if (actu.error == true) {
@@ -2193,6 +2380,7 @@ class BucleFor{
             }
             resultado = this.expresion.ejecutar(ambitoAuxiliar)
             if (resultado.error == true) {
+                //console.log("Error de for ------ " + this.idDot)
                 return {
                     error: true
                 }
@@ -2262,6 +2450,7 @@ class BucleDoWhile{
 
     ejecutar(ambitoPadre = new Ambito("Dfdf")){
         let ambitoLocal = new Ambito("WHILE", ambitoPadre); //ambito del while
+        ambitoLocal.idDot = this.idDot
         ambitoPadre.agregarHijo(ambitoLocal)
         let resultado = this.expresion.ejecutar(ambitoLocal)
         if (resultado.error == true) {
@@ -2321,6 +2510,7 @@ class BucleDoWhile{
                 }
             }
             ambitoLocal = new Ambito("DOWHILE", ambitoPadre); //ambito del while
+            ambitoLocal.idDot = this.idDot
             ambitoPadre.agregarHijo(ambitoLocal)
             resultado = this.expresion.ejecutar(ambitoLocal)
             if (resultado.error == true) {
@@ -2393,6 +2583,7 @@ class Largo{
                     continuar : false
                 }
             }
+            
         }
         if (typeof resultado.resultado === "string") {
             return {
@@ -2507,6 +2698,212 @@ class Toupper{
     }
 }
 
+class Truncate{
+    constructor(expresion){
+        this.expresion = expresion
+        this.idDot = uuidv4();
+    }
+
+    ejecutar(ambitoLocal){
+        let resultado = this.expresion.ejecutar(ambitoLocal)
+        if (resultado.error == true) {
+            return {
+                error : true
+            }
+        }
+        if (typeof resultado.resultado === "number") {
+            return {
+                error: false,
+                retorno : Math.trunc(resultado.resultado),
+                romper : false,
+                continuar : false
+            }
+        }
+        return {
+            error : true
+        }
+    }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Truncate"]; \n`;
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        
+        return cuerpo
+    }
+}
+
+class Round{
+    constructor(expresion){
+        this.expresion = expresion
+        this.idDot = uuidv4();
+    }
+
+    ejecutar(ambitoLocal){
+        let resultado = this.expresion.ejecutar(ambitoLocal)
+        if (resultado.error == true) {
+            return {
+                error : true
+            }
+        }
+        if (typeof resultado.resultado === "number") {
+            return {
+                error: false,
+                retorno : Math.round(resultado.resultado),
+                romper : false,
+                continuar : false
+            }
+        }
+        return {
+            error : true
+        }
+    }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Round"]; \n`;
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        
+        return cuerpo
+    }
+}
+
+class TipoDeDato{
+    constructor(expresion){
+        this.expresion = expresion
+        this.idDot = uuidv4();
+    }
+
+    ejecutar(ambitoLocal){
+        let resultado = this.expresion.ejecutar(ambitoLocal)
+        if (resultado.error == true) {
+            return {
+                error : true
+            }
+        }
+        if (typeof resultado.resultado === "number") {
+            if (Number.isInteger(resultado.resultado)) {
+                return {
+                    error: false,
+                    retorno : "INT",
+                    romper : false,
+                    continuar : false
+                }
+              } else {
+                return {
+                    error: false,
+                    retorno : "DOUBLE",
+                    romper : false,
+                    continuar : false
+                }
+              }
+            
+        }
+        if (typeof resultado.resultado === "string") {
+            return {
+                error: false,
+                retorno : "STRING O CHAR",
+                romper : false,
+                continuar : false
+            }
+        }
+        if (typeof resultado.resultado === "boolean") {
+            return {
+                error: false,
+                retorno : "BOOLEAN",
+                romper : false,
+                continuar : false
+            }
+        }
+        if (this.expresion.tipo == "ID") {
+            if (Array.isArray(resultado.resultado)) {
+                return {
+                    error: false,
+                    retorno : "LISTA O VECTOR",
+                    romper : false,
+                    continuar : false
+                }
+            }
+            return {
+                error: false,
+                retorno : "VARIABLE",
+                romper : false,
+                continuar : false
+            }
+        }
+        return {
+            error : true
+        }
+    }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="Typeof"]; \n`;
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        
+        return cuerpo
+    }
+}
+
+class HacerString{
+    constructor(expresion){
+        this.expresion = expresion
+        this.idDot = uuidv4();
+    }
+
+    ejecutar(ambitoLocal){
+        let resultado = this.expresion.ejecutar(ambitoLocal)
+        if (resultado.error == true) {
+            return {
+                error : true
+            }
+        }
+        return {
+            error: false,
+            retorno : resultado.resultado.toString(),
+            romper : false,
+            continuar : false
+        }
+       
+    }
+
+    generarDot(){
+        let cuerpo = `"${this.idDot}"\n"${this.idDot}"[label="ToString"]; \n`;
+        cuerpo += `"${this.idDot}parAbre"[label="\("]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parAbre"\n`;
+
+        cuerpo += `"${this.idDot}expre"[label="Expresion"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}expre"\n`;
+        cuerpo += `"${this.idDot}expre" -> ` + this.expresion.generarDot()
+
+        cuerpo += `"${this.idDot}parCierra"[label="\)"]; \n`;
+        cuerpo +=  `"${this.idDot}" -> "${this.idDot}parCierra"\n`;
+        
+        return cuerpo
+    }
+}
+
 module.exports = {
     Retorno, 
     Funcion, 
@@ -2531,5 +2928,12 @@ module.exports = {
     BucleDoWhile,
     Largo,
     Tolower,
-    Toupper
+    Toupper,
+    Truncate,
+    Round,
+    TipoDeDato,
+    HacerString,
+    Ternario,
+    Casteo,
+    //CharArray
 };

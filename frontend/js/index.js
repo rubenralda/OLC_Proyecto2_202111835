@@ -4,6 +4,16 @@ const codigo = document.getElementById("codigo");//textarea
 const lineNumbersConsole = document.querySelector('.line-numbers-consola')
 const consola = document.getElementById("textConsola");//textarea
 const btnArbol = document.getElementById("arbolAst");
+const btnTabla = document.getElementById("tablaSimbolos");
+const btnAbrir = document.getElementById("abriArchivo");
+const inputFile = document.createElement('input');
+const btnErrores = document.getElementById('reporteErrores');
+//const listArchivos = document.getElementById("listDeArchivos");
+inputFile.type = 'file';
+inputFile.accept = '.tw';
+inputFile.style.display = 'none';
+document.body.appendChild(inputFile);
+let errores = null
 
 document.addEventListener("DOMContentLoaded", (e) => {
     e.preventDefault;
@@ -63,10 +73,15 @@ async function eventbtnEjecutar() {
     .then((data) => {
         return data
     })
+    console.log(respuesta)
+    if (respuesta.error != null) {
+        alert("Ocurrio un error")
+        errores = respuesta.error
+        return
+    }
     consola.value = respuesta.salida
     let dispararEvento = new Event("keyup")
     consola.dispatchEvent(dispararEvento)
-    console.log(respuesta)
 }
 
 btnArbol.addEventListener("click", obtenerArbol);
@@ -86,6 +101,78 @@ async function obtenerArbol() {
     .then((data) => {
         return data
     })
-    //window.open(`https://quickchart.io/graphviz?graph=${codificada}`, "_blank");
+    localStorage.setItem("reporte", respuesta.arbol)
+    //window.location.href = "./html/reporte.html";
+    window.open(`./html/reporte.html`, "_blank");
     console.log(respuesta)
 }
+
+btnTabla.addEventListener("click", obtenerTabla);
+async function obtenerTabla() {
+    const ruta = `http://localhost:3000/simbolos`;
+    const respuesta = await fetch(ruta,{
+        method: 'GET', // or 'PUT'
+    })
+    .then((res)=> res.json())
+    .then((data) => {
+        return data
+    })
+    localStorage.setItem("reporte", respuesta.tabla)
+    window.open(`./html/reporte.html`, "_blank");
+    console.log(respuesta)
+    //window.location.href = "./html/reporte.html"
+}
+
+inputFile.addEventListener('change', () => {
+    const file = inputFile.files[0];
+    const reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload = () => {
+      const fileContent = reader.result;
+      codigo.value = fileContent
+      let dispararEvento = new Event("keyup")
+      codigo.dispatchEvent(dispararEvento)
+    };
+});
+
+btnAbrir.addEventListener("click", (e) =>{
+    e.preventDefault();
+    inputFile.click();
+    e.stopPropagation();
+});
+
+btnErrores.addEventListener("click", (e) =>{
+    e.preventDefault();
+    if (errores == null) {
+        alert("No hay errores")
+        return
+    }
+    let cuerpo = "digraph erres {\n"
+                + "    node [shape=plaintext]\n"
+                + "\n"
+                + "    tbl [\n"
+                + "        label=<\n"
+                + "            <table border=\"0\" cellborder=\"1\" cellspacing=\"0\">"
+                + "<tr><td bgcolor=\"/rdylgn11/5:/rdylgn11/5\"><b>#</b></td>"
+                + "<td bgcolor=\"/rdylgn11/5:/rdylgn11/5\"><b>Tipo de error</b></td>"
+                + "<td bgcolor=\"/rdylgn11/5:/rdylgn11/5\"><b>Descripcion</b></td>"
+                + "<td bgcolor=\"/rdylgn11/5:/rdylgn11/5\"><b>Linea</b></td>"
+                + "<td bgcolor=\"/rdylgn11/5:/rdylgn11/5\"><b>Columna</b></td>"
+                + "</tr>";
+    for (let index = 0; index < errores.length; index++) {
+        cuerpo += `<tr>
+        <td>${index + 1}</td>
+        <td>${errores[index].tipo}</td>
+        <td>${errores[index].mensaje}</td>
+        <td>${errores[index].linea}</td>
+        <td>${errores[index].columna}</td>
+        </tr>`;
+    }
+    cuerpo += "</table>\n"
+                + "        >\n"
+                + "    ];\n"
+                + "}";
+    localStorage.setItem("reporte", cuerpo)
+    window.open(`./html/reporte.html`, "_blank");
+    e.stopPropagation();
+});

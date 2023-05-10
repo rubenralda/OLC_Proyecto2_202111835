@@ -1,25 +1,30 @@
 const { Router } = require("express");
 const router = Router();
 const gramatica = require("../interprete/gramatica.js");
-const {Llamada, Vector, Lista} = require('../arbol/nodoAST.js');
-const Tabla = require("../tablaSimbolos/tablaSimbolos.js")
+const {Llamada, Vector, Lista, Asignacion} = require('../arbol/nodoAST.js');
 const {Funcion} = require('../arbol/nodoAST.js');
 const {DeclaracionVariables} = require('../arbol/nodoAST.js');
 const Ambito = require('../ambito/ambito.js');
-const graphviz = require('graphviz');
-const Viz = require('viz.js');
-const { Module, render } = require('viz.js/full.render.js');
-const fs = require('fs');
-//const path = require("path");
-
+const {Errores} = require('../arbol/errores.js');
+let tabla = null
 
 router.post("/ejecutar", (req, res) => {
   let codigo = req.body.codigo;
   let parser = new gramatica.Parser();
   let raiz = parser.parse(codigo);
+  //console.log(raiz)
+  if (raiz.length > 0) {
+    if (raiz[0] instanceof Errores) {
+      let respuesta = {
+        error : raiz
+      };
+      res.send(respuesta);
+      raiz.length = 0;
+      return
+    }
+  }
   let ejecucion = null;
   let huboError = false;
-  let mensaje = "";
   
   let ambitoGlobal = new Ambito("global", null); //null porque es la raiz
   for (const sentencia of raiz) {
@@ -30,7 +35,13 @@ router.post("/ejecutar", (req, res) => {
     }else if (sentencia instanceof Vector) {
       ambitoGlobal.agregar(sentencia.id, sentencia.tipo, "VECTOR" , sentencia)
     }else if (sentencia instanceof Lista) {
-        ambitoGlobal.agregar(sentencia.id, sentencia.tipo, "LISTA" , [])
+      ambitoGlobal.agregar(sentencia.id, sentencia.tipo, "LISTA" , [])
+    }else if (sentencia instanceof Asignacion){
+      let resul = sentencia.ejecutar(ambitoGlobal)
+      if (resul.error == true) {
+        huboError = true
+        break
+      }
     }else if(sentencia instanceof Llamada){
       if(sentencia.main){//si no es main lo ignora
         if (ejecucion == null) {
@@ -54,10 +65,12 @@ router.post("/ejecutar", (req, res) => {
       console.log("Ejecucion terminada con error")
     }
   }
+  tabla = ambitoGlobal
   let respuesta = {
     ast: raiz, //el resultado del parser
     salida : ambitoGlobal.salida,
-    tablaSimbolos : ambitoGlobal.tabla
+    tablaSimbolos : ambitoGlobal.tabla,
+    error : null
   };
   res.send(respuesta);
 });
@@ -78,6 +91,14 @@ router.post("/ast", (req, res) => {
   //const dot = fs.readFileSync('ejemplo.dot', 'utf8');
   let respuesta = {
     arbol: cuerpo,
+    //imagen: cuerpo //para mostrar el arbol con graphviz
+  };
+  res.send(respuesta);
+});
+
+router.get("/simbolos", (req, res) => {
+  let respuesta = {
+    tabla: tabla.mostrarTablaDeSimbolos(),
     //imagen: cuerpo //para mostrar el arbol con graphviz
   };
   res.send(respuesta);

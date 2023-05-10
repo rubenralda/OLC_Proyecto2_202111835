@@ -27,24 +27,28 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
-          <li class="nav-item dropdown">
+          <!--
+             <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle text-white text-bg-secondary" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               Editor
             </a>
             <ul class="dropdown-menu" id="menuArchivos">
               <li><a class="dropdown-item" id="crearArchivo">Crear Archivo</a></li>
-              <li><a class="dropdown-item" id="abriArchivo">Abrir Archivo</a></li>
+              
               <li><a class="dropdown-item" id="guardarArchivo">Guardar Archivo</a></li>
             </ul>
           </li>
+          -->
           <li class="nav-item">
-            <a class="nav-link text-white text-bg-secondary" id="reporteErrores">Reporte de errores</a>
+            <button type="button" class="btn btn-secondary" id="abriArchivo">Abrir Archivo</button>
+          <li class="nav-item">
+            <button type="button" class="btn btn-secondary" id="reporteErrores">Reporte de errores</button>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-white text-bg-secondary" id="arbolAst">Generar Árbol AST (Árbol de Análisis Sintáctico)</a>
+            <button type="button" class="btn btn-secondary" id="arbolAst">Generar Árbol AST (Árbol de Análisis Sintáctico)</button>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-white text-bg-secondary" id="tablaSimbolos">Reporte de Tabla de Símbolos</a>
+            <button type="button" class="btn btn-secondary" id="tablaSimbolos">Reporte de Tabla de Símbolos</button>
           </li>
         </ul>
       </div>
@@ -68,21 +72,19 @@
       </div>
     
       <div class="col-2">
+        <br>
         <div class="row mb-5">
-          <h2>Archivos Cargados</h2><br>
-          <div id="listDeArchivos" class="list-group">
-            <button type="button" class="list-group-item list-group-item-action active" aria-current="true">
-              The current button
-            </button>
-            <button type="button" class="list-group-item list-group-item-action">A second button item</button>
-            <button type="button" class="list-group-item list-group-item-action">A third button item</button>
-            <button type="button" class="list-group-item list-group-item-action">A fourth button item</button>
-          </div>
-        </div>
-        <div class="row mb-5">
+          <h2>Compilación</h2>
+          <!--
+            <div id="listDeArchivos" class="list-group">
+             <div class="row mb-5">
           <button type="button" class="btn btn-danger" id="eliminarPestaña">Eliminar Pestaña</button>
         </div>
-        <div class="row">
+          </div>
+          -->
+        </div>
+       
+        <div class="row mb-3">
           <button type="button" class="btn btn-info" id="btn">Ejecutar</button>
         </div>
       </div>
